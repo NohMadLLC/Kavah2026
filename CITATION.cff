@@ -1,0 +1,29 @@
+﻿cff-version: 1.2.0
+message: "If you use this software, please cite both the repository and the paper."
+authors:
+  - family-names: Brown
+    given-names: Christopher Lamarr
+    affiliation: NohMad LLC
+    email: NohMadllc@journalist.com
+title: "Bedrock AGI: Geometrically Stable Conscious Intelligence"
+version: 0.1.0
+date-released: 2026-02-12
+repository-code: "https://github.com/NohMadLLC/Kavah2026"
+license: FOCL-2026
+keywords:
+  - AGI
+  - hyperbolic geometry
+  - CRIS
+  - consciousness
+  - persistence filter
+  - Poincaré ball
+  - bedrock constraint
+preferred-citation:
+  type: report
+  authors:
+    - family-names: Brown
+      given-names: Christopher Lamarr
+  title: "The Geometry of Persistence: A Falsifiable, CRIS-Compliant Core for Self-Stabilizing Systems"
+  year: 2026
+  institution: NohMad LLC
+  doi: 10.5281/zenodo.18371211

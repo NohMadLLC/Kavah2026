@@ -1,0 +1,51 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+
+# PyTorch
+*.pt
+*.pth
+checkpoints/*.pt
+checkpoints/*.pth
+*.ckpt
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# Data & Logs
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Monitoring
+prometheus/data/
+grafana/data/
+
+# Temporary
+*.tmp
+*.bak
+*~
