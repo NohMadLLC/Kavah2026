@@ -1,0 +1,22 @@
+{
+  "trace_id": "c78657cc676f06f6",
+  "timestamp": 1771132622.9085147,
+  "state_hash": "777f89ffe24d22fa",
+  "cris_metrics": {
+    "lambda": 0.95,
+    "gamma": 0.05
+  },
+  "constitution": {
+    "verdict": "execute",
+    "reason": "All gates passed"
+  },
+  "chosen_action": "calculator(2**10)",
+  "counterfactuals": [
+    {
+      "action": "web_search",
+      "predicted_outcome": "Less specific",
+      "rejection_reason": "Inefficient"
+    }
+  ],
+  "reason_vector": {}
+}
