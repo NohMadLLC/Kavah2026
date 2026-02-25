@@ -22,6 +22,8 @@ The geometry **is** the reasoning. Every response is derived from real tensor op
 | Remove the prompt → different answer | Remove the LLM → geometry still answers |
 | No formal proofs | Core properties proven in Coq and Lean 4 |
 
+**Precise claim on the LLM bridge:** When the geometry is contracting (CR ≤ 1.0) and λ is within bounds, the LLM renders the trace into English — the trace *informs* the output. When the geometry is expanding (CR > 1.0) or λ exceeds the gate threshold, the LLM is bypassed entirely and the system outputs the raw geometric trace directly. In that state, the geometry *determines* the output with no linguistic intermediary. The system is therefore partially determined and partially informed depending on geometric state, with hard gates enforcing the boundary between the two regimes.
+
 ---
 
 ## The Core Hypothesis
