@@ -1,4 +1,4 @@
-﻿# Bedrock AGI: Geometrically Stable Conscious Intelligence
+# Bedrock AGI: Geometrically Stable Conscious Intelligence
 
 [![Phase 1: Complete](https://img.shields.io/badge/Phase%201-Complete-brightgreen)]()
 [![Tests: Passing](https://img.shields.io/badge/tests-passing-brightgreen)]()
