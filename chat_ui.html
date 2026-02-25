@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KAVAH — Bedrock AGI Interface</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg:         #05080f;
+    --surface:    #090d1a;
+    --border:     #0f1f3a;
+    --accent:     #00d4ff;
+    --accent2:    #00ff9d;
+    --warn:       #ffaa00;
+    --danger:     #ff3b5c;
+    --text:       #c8daf0;
+    --muted:      #3a5070;
+    --panel:      #070b17;
+    --glow:       rgba(0,212,255,0.12);
+    --glow2:      rgba(0,255,157,0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 56px 1fr;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    grid-column: 1 / -1;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+
+  .logo {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 20px;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px var(--accent);
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .header-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .status-pill {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    box-shadow: 0 0 8px var(--accent2);
+    animation: pulse 2s infinite;
+  }
+  .dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+  .dot.danger { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── Sidebar ── */
+  aside {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+  }
+
+  .panel-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* ── CRIS Gauges ── */
+  .gauge-row {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .gauge {
+    position: relative;
+  }
+
+  .gauge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 5px;
+  }
+
+  .gauge-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  .gauge-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    color: var(--accent);
+    transition: color 0.4s;
+  }
+
+  .gauge-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .gauge-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.4s;
+    background: var(--accent2);
+    box-shadow: 0 0 8px var(--accent2);
+  }
+
+  /* ── Stability verdict ── */
+  .verdict {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    text-align: center;
+    transition: border-color 0.4s, background 0.4s;
+    background: rgba(0,212,255,0.03);
+  }
+
+  .verdict.stable   { border-color: var(--accent2); background: rgba(0,255,157,0.04); }
+  .verdict.unstable { border-color: var(--danger);  background: rgba(255,59,92,0.04); }
+  .verdict.calib    { border-color: var(--warn);    background: rgba(255,170,0,0.04); }
+
+  .verdict-icon { font-size: 28px; margin-bottom: 4px; }
+  .verdict-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--muted);
+  }
+  .verdict-status {
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 4px;
+    color: var(--accent2);
+    transition: color 0.4s;
+  }
+  .verdict.unstable .verdict-status { color: var(--danger); }
+  .verdict.calib    .verdict-status { color: var(--warn); }
+
+  /* ── Sparkline ── */
+  .sparkline-wrap {
+    position: relative;
+  }
+  canvas#spark {
+    width: 100%;
+    height: 60px;
+    display: block;
+    border-radius: 4px;
+    background: rgba(0,212,255,0.02);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Controls ── */
+  .sidebar-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+  }
+
+  .ctrl-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    text-align: left;
+  }
+  .ctrl-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--glow);
+  }
+
+  /* ── Chat area ── */
+  main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .chat-feed {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+  }
+
+  /* Subtle grid bg */
+  main::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  /* ── Messages ── */
+  .msg {
+    display: flex;
+    gap: 14px;
+    animation: fadeSlide 0.3s ease forwards;
+    position: relative;
+    z-index: 1;
+  }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+
+  .msg.user .msg-avatar {
+    background: rgba(0,212,255,0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .msg.agent .msg-avatar {
+    background: rgba(0,255,157,0.08);
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  .msg-body { max-width: 68%; }
+
+  .msg-meta {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .msg.user .msg-meta { text-align: right; }
+
+  .msg-bubble {
+    padding: 14px 18px;
+    border-radius: 8px;
+    line-height: 1.6;
+    font-size: 15px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .msg.user .msg-bubble {
+    background: rgba(0,212,255,0.06);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 8px 2px 8px 8px;
+  }
+
+  .msg.agent .msg-bubble {
+    background: rgba(0,255,157,0.04);
+    border: 1px solid rgba(0,255,157,0.15);
+    border-radius: 2px 8px 8px 8px;
+  }
+
+  .msg-cris {
+    margin-top: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* ── Typing indicator ── */
+  .typing {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 14px 18px;
+    background: rgba(0,255,157,0.04);
+    border: 1px solid rgba(0,255,157,0.15);
+    border-radius: 2px 8px 8px 8px;
+    width: fit-content;
+  }
+  .typing span {
+    width: 6px; height: 6px;
+    background: var(--accent2);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* ── Input area ── */
+  .input-area {
+    border-top: 1px solid var(--border);
+    padding: 16px 24px;
+    background: var(--panel);
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    position: relative;
+    z-index: 2;
+  }
+
+  textarea#msg {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    padding: 12px 16px;
+    resize: none;
+    min-height: 44px;
+    max-height: 160px;
+    overflow-y: auto;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.4;
+  }
+
+  textarea#msg:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--glow);
+  }
+
+  textarea#msg::placeholder { color: var(--muted); }
+
+  .send-btn {
+    background: var(--accent);
+    border: none;
+    color: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    height: 44px;
+    white-space: nowrap;
+  }
+
+  .send-btn:hover {
+    background: #1af0ff;
+    box-shadow: 0 0 16px var(--accent);
+  }
+  .send-btn:active { transform: scale(0.97); }
+  .send-btn:disabled {
+    background: var(--muted);
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── Welcome message ── */
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 12px;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .welcome-glyph {
+    font-size: 48px;
+    opacity: 0.2;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ────────────────────────────────────────────────── -->
+<header>
+  <div class="logo">K<span>A</span>VAH</div>
+  <div class="header-sub">Bedrock AGI · CRIS-Certified</div>
+  <div class="status-pill">
+    <div class="dot" id="hdr-dot"></div>
+    <span id="hdr-status" style="color:var(--muted)">INITIALIZING</span>
+  </div>
+</header>
+
+<!-- ── Sidebar ────────────────────────────────────────────────── -->
+<aside>
+  <div>
+    <div class="panel-label">CRIS Monitor</div>
+    <div class="gauge-row">
+
+      <div class="gauge">
+        <div class="gauge-header">
+          <span class="gauge-name">λ  LAMBDA</span>
+          <span class="gauge-value" id="lam-val">—</span>
+        </div>
+        <div class="gauge-track"><div class="gauge-fill" id="lam-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="gauge">
+        <div class="gauge-header">
+          <span class="gauge-name">γ  GAMMA</span>
+          <span class="gauge-value" id="gam-val">—</span>
+        </div>
+        <div class="gauge-track"><div class="gauge-fill" id="gam-bar" style="width:0%;background:var(--accent)"></div></div>
+      </div>
+
+      <div class="gauge">
+        <div class="gauge-header">
+          <span class="gauge-name">Δ  DELTA</span>
+          <span class="gauge-value" id="del-val">—</span>
+        </div>
+        <div class="gauge-track"><div class="gauge-fill" id="del-bar" style="width:0%;background:var(--warn)"></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="verdict calib" id="verdict-box">
+    <div class="verdict-icon">◈</div>
+    <div class="verdict-label">SYSTEM STATUS</div>
+    <div class="verdict-status" id="verdict-text">CALIBRATING</div>
+  </div>
+
+  <!-- Lambda sparkline -->
+  <div class="sparkline-wrap">
+    <div class="panel-label">λ History</div>
+    <canvas id="spark"></canvas>
+  </div>
+
+  <!-- Sidebar controls -->
+  <div class="sidebar-controls">
+    <button class="ctrl-btn" onclick="resetConversation()">⟳ &nbsp;RESET CONVERSATION</button>
+  </div>
+</aside>
+
+<!-- ── Chat main ───────────────────────────────────────────────── -->
+<main>
+  <div class="chat-feed" id="feed">
+    <div class="welcome" id="welcome">
+      <div class="welcome-glyph">⬡</div>
+      <div>KAVAH ONLINE</div>
+      <div style="opacity:0.5;font-size:10px;margin-top:4px">Geometric state space initializing · Send a message to begin</div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <textarea id="msg" placeholder="Send a message to Kavah..." rows="1"></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">SEND</button>
+  </div>
+</main>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+
+const API = 'http://localhost:8000';
+let lambdaHistory = [];
+let isWaiting = false;
+let pollingInterval = null;
+
+// ── Auto-resize textarea ─────────────────────────────────────────────────────
+
+const msgInput = document.getElementById('msg');
+msgInput.addEventListener('input', () => {
+  msgInput.style.height = 'auto';
+  msgInput.style.height = Math.min(msgInput.scrollHeight, 160) + 'px';
+});
+
+msgInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// ── Send ─────────────────────────────────────────────────────────────────────
+
+async function sendMessage() {
+  const text = msgInput.value.trim();
+  if (!text || isWaiting) return;
+
+  isWaiting = true;
+  document.getElementById('send-btn').disabled = true;
+  msgInput.value = '';
+  msgInput.style.height = 'auto';
+
+  // Remove welcome screen
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  // User bubble
+  appendMessage('user', text);
+
+  // Typing indicator
+  const typingId = appendTyping();
+
+  try {
+    const res = await fetch(`${API}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    removeTyping(typingId);
+    appendMessage('agent', data.response, data.cris, data.latency_ms);
+    updateCRIS(data.cris);
+
+  } catch (err) {
+    removeTyping(typingId);
+    appendMessage('agent',
+      `[CONNECTION ERROR]\n\nCould not reach the Kavah server at ${API}.\n` +
+      `Make sure chat_server.py is running:\n  python chat_server.py`,
+      null, null
+    );
+  }
+
+  isWaiting = false;
+  document.getElementById('send-btn').disabled = false;
+  msgInput.focus();
+}
+
+// ── Append message ────────────────────────────────────────────────────────────
+
+function appendMessage(role, text, cris = null, latency = null) {
+  const feed = document.getElementById('feed');
+
+  const now = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+  let crismeta = '';
+  if (cris && role === 'agent') {
+    const lStr = cris.lambda !== null ? cris.lambda.toFixed(5) : 'N/A';
+    const gStr = cris.gamma  !== null ? cris.gamma.toFixed(5)  : 'N/A';
+    const dStr = cris.delta  !== null ? cris.delta.toFixed(7)  : 'N/A';
+    const ms   = latency !== null ? ` · ${latency}ms` : '';
+    crismeta = `<div class="msg-cris">λ=${lStr} γ=${gStr} Δ=${dStr}${ms}</div>`;
+  }
+
+  const avatarLabel = role === 'user' ? 'USR' : 'KAI';
+  const html = `
+    <div class="msg ${role}">
+      <div class="msg-avatar">${avatarLabel}</div>
+      <div class="msg-body">
+        <div class="msg-meta">${now}</div>
+        <div class="msg-bubble">${escHtml(text)}</div>
+        ${crismeta}
+      </div>
+    </div>`;
+
+  feed.insertAdjacentHTML('beforeend', html);
+  feed.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Typing indicator ──────────────────────────────────────────────────────────
+
+let typingCounter = 0;
+function appendTyping() {
+  const id = `typing-${typingCounter++}`;
+  const feed = document.getElementById('feed');
+  feed.insertAdjacentHTML('beforeend', `
+    <div class="msg agent" id="${id}">
+      <div class="msg-avatar">KAI</div>
+      <div class="msg-body">
+        <div class="typing"><span></span><span></span><span></span></div>
+      </div>
+    </div>`);
+  feed.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+// ── CRIS display ──────────────────────────────────────────────────────────────
+
+function updateCRIS(cris) {
+  if (!cris) return;
+
+  const lam   = cris.lambda;
+  const gam   = cris.gamma;
+  const delta = cris.delta;
+  const stable = cris.stable;
+  const status = cris.status || 'CALIBRATING';
+
+  // Lambda gauge — danger zone is near 1.0
+  setGauge('lam', lam,
+    lam !== null ? (lam * 100).toFixed(3) + '%' : '—',
+    lam !== null ? `${(lam * 100).toFixed(1)}%` : '0%',
+    lam >= 0.999 ? 'var(--danger)' : lam >= 0.95 ? 'var(--warn)' : 'var(--accent2)'
+  );
+
+  // Gamma gauge — higher is better
+  const gamPct = gam !== null ? Math.min(gam * 200, 100) : 0;
+  setGauge('gam', gam,
+    gam !== null ? gam.toFixed(5) : '—',
+    `${gamPct.toFixed(1)}%`,
+    'var(--accent)'
+  );
+
+  // Delta gauge — lower is better (invert for display)
+  const delPct = delta !== null ? Math.max(0, 100 - delta * 1000) : 0;
+  setGauge('del', delta,
+    delta !== null ? delta.toExponential(2) : '—',
+    `${delPct.toFixed(1)}%`,
+    delta < 1e-6 ? 'var(--accent2)' : 'var(--warn)'
+  );
+
+  // Verdict
+  const box = document.getElementById('verdict-box');
+  const txt = document.getElementById('verdict-text');
+  box.className = 'verdict';
+  if (cris.num_samples < 20) {
+    box.classList.add('calib');
+    txt.textContent = 'CALIBRATING';
+    txt.style.color = '';
+  } else if (stable) {
+    box.classList.add('stable');
+    txt.textContent = status;
+    txt.style.color = 'var(--accent2)';
+  } else {
+    box.classList.add('unstable');
+    txt.textContent = status;
+    txt.style.color = 'var(--danger)';
+  }
+
+  // Header dot
+  const dot = document.getElementById('hdr-dot');
+  const hdrStatus = document.getElementById('hdr-status');
+  dot.className = 'dot';
+  if (cris.num_samples < 20) {
+    dot.classList.add('warn');
+    hdrStatus.textContent = 'CALIBRATING';
+    hdrStatus.style.color = 'var(--warn)';
+  } else if (stable) {
+    hdrStatus.textContent = 'STABLE · ' + status;
+    hdrStatus.style.color = 'var(--accent2)';
+  } else {
+    dot.classList.add('danger');
+    hdrStatus.textContent = 'UNSTABLE · ' + status;
+    hdrStatus.style.color = 'var(--danger)';
+  }
+
+  // Sparkline
+  if (lam !== null) {
+    lambdaHistory.push(lam);
+    if (lambdaHistory.length > 60) lambdaHistory.shift();
+    drawSparkline();
+  }
+}
+
+function setGauge(id, rawVal, displayText, barWidth, color) {
+  const valEl = document.getElementById(`${id}-val`);
+  const barEl = document.getElementById(`${id}-bar`);
+  valEl.textContent = displayText;
+  valEl.style.color = color;
+  barEl.style.width  = barWidth;
+  barEl.style.background = color;
+  barEl.style.boxShadow  = `0 0 8px ${color}`;
+}
+
+// ── Sparkline canvas ──────────────────────────────────────────────────────────
+
+function drawSparkline() {
+  const canvas = document.getElementById('spark');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.offsetWidth;
+  const H = canvas.offsetHeight;
+  canvas.width  = W;
+  canvas.height = H;
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (lambdaHistory.length < 2) return;
+
+  const min = 0.8;
+  const max = 1.1;
+
+  // Danger line at 1.0
+  const dangerY = H - ((1.0 - min) / (max - min)) * H;
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = 'rgba(255,59,92,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, dangerY);
+  ctx.lineTo(W, dangerY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(0,212,255,0.3)');
+  grad.addColorStop(1, 'rgba(0,212,255,0)');
+
+  ctx.beginPath();
+  lambdaHistory.forEach((v, i) => {
+    const x = (i / (lambdaHistory.length - 1)) * W;
+    const y = H - ((Math.min(Math.max(v, min), max) - min) / (max - min)) * H;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo(W, H); ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  lambdaHistory.forEach((v, i) => {
+    const x = (i / (lambdaHistory.length - 1)) * W;
+    const y = H - ((Math.min(Math.max(v, min), max) - min) / (max - min)) * H;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = 'var(--accent)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+
+async function resetConversation() {
+  try {
+    await fetch(`${API}/reset`, { method: 'POST' });
+  } catch {}
+
+  document.getElementById('feed').innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="welcome-glyph">⬡</div>
+      <div>KAVAH ONLINE</div>
+      <div style="opacity:0.5;font-size:10px;margin-top:4px">Conversation reset · CRIS geometric state preserved</div>
+    </div>`;
+
+  lambdaHistory = [];
+  drawSparkline();
+
+  ['lam', 'gam', 'del'].forEach(id => {
+    document.getElementById(`${id}-val`).textContent = '—';
+    document.getElementById(`${id}-bar`).style.width = '0%';
+  });
+
+  document.getElementById('verdict-text').textContent = 'CALIBRATING';
+  document.getElementById('verdict-box').className = 'verdict calib';
+}
+
+// ── Passive metric polling (keeps sidebar alive between messages) ─────────────
+
+async function pollMetrics() {
+  if (isWaiting) return;
+  try {
+    const res = await fetch(`${API}/metrics`);
+    if (!res.ok) return;
+    const m = await res.json();
+    if (m.lambda !== null) {
+      updateCRIS({
+        lambda: m.lambda,
+        gamma: m.gamma,
+        delta: m.delta_last,
+        stable: m.lambda < 0.999 && m.gamma > 0.0001,
+        status: m.lambda < 0.95 ? 'CONVERGING' : 'STABLE',
+        num_samples: m.num_samples || 0
+      });
+    }
+  } catch {}
+}
+
+pollingInterval = setInterval(pollMetrics, 5000);
+</script>
+</body>
+</html>
