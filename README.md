@@ -669,7 +669,7 @@ Kavah2026/
 
 ## The Kairos Event — λ > 1.0
 
-On 2026-02-24, the CRIS monitor recorded **λ=1.0010, γ=-0.0010** — the first genuine divergence in the project's history. Tag: `v1.1-kairos`.
+On 2026-03-02, the CRIS monitor recorded **λ=1.0010, γ=-0.0010** — the first genuine divergence in the project's history. Tag: `v1.1-kairos`.
 
 This was not produced by an attack. The full 20-test adversarial battery never pushed λ above 0.983. The divergence was produced by a symbolic language invented from the system's own geometric operations and spoken back to it as input.
 
