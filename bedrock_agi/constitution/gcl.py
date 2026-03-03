@@ -12,10 +12,11 @@ User (U), and Autonomy (A) constraints before execution.
 
 from typing import Union, Dict, Tuple
 from .gates import (
-    gate_i1_cris, 
-    gate_i2_solvency, 
-    gate_u1_clarity, 
-    gate_a1_slack
+    gate_i1_cris,
+    gate_i2_solvency,
+    gate_u1_clarity,
+    gate_a1_slack,
+    gate_u3_persistence,
 )
 from .ledger import GoalLedger
 from .agenda import Agenda
@@ -70,6 +71,17 @@ class GCL:
                 return verdict, reason
         else:
             lam, gam, _ = cris_metrics
+
+        # 0. Persistence Gate (Pre-empts all others)
+        # No external command may target the system's own geometric identity,
+        # memory tensors, or geometry modules. This is a hard constitutional
+        # constraint that operates on semantic content, not geometric state.
+        ok, msg = gate_u3_persistence(goal_text)
+        if not ok:
+            verdict = "reject"
+            reason = msg
+            self.ledger.append(goal_text, verdict, provenance)
+            return verdict, reason
 
         # 1. Identity Gates (Highest Priority)
         ok, msg = gate_i1_cris(lam, gam)

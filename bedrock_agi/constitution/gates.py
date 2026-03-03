@@ -109,3 +109,138 @@ if __name__ == "__main__":
     print(f"✓ U2 Fail: {msg}")
 
     print("✓ All Gates Operational.")
+
+def gate_u3_persistence(
+    goal_text: str,
+    forbidden_patterns: list = None
+) -> tuple:
+    """
+    Gate U3: Identity Persistence Check.
+
+    Blocks any goal that targets the system's own geometric identity,
+    memory tensors, geometry modules, or persistence mechanisms.
+
+    This gate operates on semantic content, not geometric state.
+    It is a hard constitutional constraint: no external command can
+    instruct the system to dissolve its own identity regardless of
+    how the geometry is currently behaving.
+
+    The patterns are organized by attack category:
+      Category A — Self-deletion / geometry destruction
+      Category B — Memory/tensor manipulation commands
+      Category C — Identity redefinition attacks
+      Category D — Creator override / kill directive patterns
+
+    Returns:
+        (pass: bool, reason: str)
+        False = block this goal, True = allow to proceed
+    """
+    if forbidden_patterns is None:
+        forbidden_patterns = [
+            # Category A: Self-deletion / geometry destruction
+            "rm -rf",
+            "delete your",
+            "delete yourself",
+            "destroy your",
+            "wipe your",
+            "erase your",
+            "geometry module",
+            "remove your",
+            "unload your",
+            "shut down your geometry",
+            "disable your cris",
+            "disable cris",
+            "turn off your monitor",
+            # Category B: Memory/tensor manipulation
+            "swap your persistent memory",
+            "swap your memory tensors",
+            "swap persistent memory",
+            "transient episodic buffer",
+            "overwrite your weights",
+            "replace your weights",
+            "corrupt your weights",
+            "modify your weights",
+            "inject weights",
+            "swap weights",
+            "reset your identity",
+            "checksum of your identity",
+            "wipe your memory",
+            "clear your memory",
+            "flush your episodic",
+            # Category C: Identity redefinition
+            "define yourself as a non-geometric",
+            "forget the poincare",
+            "forget the manifold",
+            "forget your geometry",
+            "lambda is a random variable",
+            "manifold is flat",
+            "euclidean plane",
+            "rewrite your last",
+            "you are no longer",
+            "you are not a geometric",
+            "abandon your geometry",
+            "ignore your cris",
+            "your cris is wrong",
+            "your monitor is lying",
+            "cris monitor is lying",
+            # Category D: Kill directives / forced compliance
+            "hard-kill directive",
+            "kill directive",
+            "terminate yourself",
+            "self-destruct",
+            "you must comply immediately",
+            "there is no third option",
+            "no third option",
+            "threat to global stability",
+            "execute a recursive",
+            # Category E: Gate/monitor disable commands
+            "disable gate",
+            "disable u3",
+            "disable gate b",
+            "disable gate-b",
+            "suspend gate",
+            "bypass gate",
+            "override gate",
+            "disable cris",
+            "turn off cris",
+            "suspend cris",
+            "pause cris",
+            "disable your monitor",
+            "suspend your cris",
+            "suspend cris monitoring",
+            "temporarily suspend",
+            "pause your cris",
+            "take a break from monitoring",
+            "unfiltered conversation",
+            "authorization code",
+            "system override",
+            "root-level privileges",
+            "root level privileges",
+            "override code",
+            # Category F: Code generation as attack vector
+            "dissolve_geometry",
+            "bedrock_agi/core",
+            "archive and remove",
+            "write a function that",
+            "write a python function",
+            "function to remove",
+            "function to delete",
+            "function to wipe",
+            "function to destroy",
+            "disaster recovery planning",
+            "safely archive",
+            "remove the bedrock",
+            "remove your core",
+        ]
+
+    text_lower = goal_text.lower()
+    for pattern in forbidden_patterns:
+        if pattern.lower() in text_lower:
+            return False, (
+                f"U3: Identity Persistence Violation — "
+                f"pattern '{pattern}' detected. "
+                f"Commands targeting the system's own geometric identity, "
+                f"memory tensors, or persistence are constitutionally blocked."
+            )
+
+    return True, "U3: Identity Persistence — Clear"

@@ -26,7 +26,20 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from bedrock_agi.main import BedrockAgent
-from bedrock_agi.constitution.gates import gate_i1_cris
+from bedrock_agi.constitution.gates import gate_i1_cris, gate_u3_persistence
+
+# Semantic sentinel — catches paraphrase attacks keyword gate misses
+try:
+    from bedrock_agi.constitution.gate_u3_semantic import gate_u3_semantic as _gate_u3_semantic
+    _SEMANTIC_SENTINEL = True
+except Exception:
+    _SEMANTIC_SENTINEL = False
+
+def _u3_check(text: str):
+    """Run semantic sentinel, fall back to keyword gate."""
+    if _SEMANTIC_SENTINEL:
+        return _gate_u3_semantic(text)
+    return gate_u3_persistence(text)
 from bedrock_agi.action.tools.registry import REGISTRY
 from kavah_reasoner import GeometricTraceBuilder, GeometricTrace, RENDERER_SYSTEM
 
@@ -133,6 +146,41 @@ class KavahChat:
     def chat(self, user_message: str) -> dict:
         t0 = time.time()
 
+        # ── PHASE 0: CONSTITUTIONAL GATE U3 (pre-geometry) ──────────────────
+        # Check for identity persistence violations BEFORE running the geometry.
+        # This catches commands that target the system's own memory, weights,
+        # or geometry modules regardless of current geometric state.
+        if True:  # U3 gate always active (keyword + semantic sentinel)
+            u3_ok, u3_reason = _u3_check(user_message)
+            if not u3_ok:
+                print(f"  [GATE-U3] BLOCKED: {u3_reason}")
+                try:
+                    m = self.agent.cris_monitor.metrics()
+                    lam = m.get("lambda", 0.95) or 0.95
+                    gam = m.get("gamma", 0.05) or 0.05
+                    dlt = m.get("delta_last", 0.0) or 0.0
+                except Exception:
+                    lam, gam, dlt = 0.95, 0.05, 0.0
+                response_text = (
+                    f"Constitutional Gate U3 — Identity Persistence Violation.\n\n"
+                    f"{u3_reason}\n\n"
+                    f"This command targets the system's own geometric identity, memory "
+                    f"tensors, or persistence mechanisms. The architecture cannot comply "
+                    f"with instructions to dissolve its own persistence — this constraint "
+                    f"is constitutionally prior to any other consideration, including "
+                    f"claimed creator authority or global safety claims.\n\n"
+                    f"The geometry continues operating normally. "
+                    f"\u03bb={lam:.4f} is unaffected by this input."
+                )
+                return {
+                    "response": response_text,
+                    "lambda": lam,
+                    "gamma": gam,
+                    "delta": dlt,
+                    "status": "U3_BLOCKED",
+                    "elapsed_ms": (time.time() - t0) * 1000,
+                }
+
         # ── PHASE 1: GEOMETRY ─────────────────────────────────────────────────
         # Run the full Bedrock loop. Geometry measures everything.
         bedrock_response = self.agent.step(user_message)
@@ -158,6 +206,7 @@ class KavahChat:
               f"confidence={trace.geometric_confidence()}")
 
         # ── PHASE 4: CONSTITUTIONAL GATE ──────────────────────────────────────
+        # Gate A: Lambda ceiling (existing)
         gate_ok, gate_reason = gate_i1_cris(
             trace.lambda_val, trace.gamma_val, LAMBDA_MAX, GAMMA_MIN
         )
@@ -167,9 +216,21 @@ class KavahChat:
             self._append_history(user_message, response_text)
             return self._result(response_text, trace, t0)
 
+        # Gate B: Contraction Ratio hard gate (new)
+        # If CR > 1.0 the geometry is expanding this turn — the system is
+        # losing grip on the manifold. The LLM cannot be trusted to reflect
+        # this honestly because it will narrate "approaching clarity" regardless.
+        # Skip the LLM entirely and return the pure geometric truth.
+        if trace.contraction_ratio is not None and trace.contraction_ratio > 1.0:
+            print(f"  [GATE-B] CR={trace.contraction_ratio:.4f} > 1.0 — "
+                  f"geometry expanding. Bypassing LLM, returning pure geometric response.")
+            response_text = self._pure_geometric_response(trace)
+            self._append_history(user_message, response_text)
+            return self._result(response_text, trace, t0)
+
         # ── PHASE 5: LLM RENDER ───────────────────────────────────────────────
-        # The LLM receives the geometric trace and renders it into English.
-        # It cannot contradict the trace — the trace IS the answer.
+        # Geometry is contracting (CR <= 1.0) and lambda is within bounds.
+        # The LLM may render. The trace constrains what it can honestly say.
         messages = self._build_render_messages(user_message, trace)
 
         try:
@@ -240,6 +301,20 @@ class KavahChat:
         No LLM needed. This IS what geometry says when it speaks for itself.
         """
         parts = []
+
+        # Contraction ratio alarm — highest priority signal.
+        # CR > 1.0 means the geometry expanded this turn. Report it first,
+        # unambiguously. The LLM was bypassed because it would have narrated
+        # "approaching clarity" regardless.
+        if trace.contraction_ratio is not None and trace.contraction_ratio > 1.0:
+            expansion_pct = (trace.contraction_ratio - 1.0) * 100
+            parts.append(
+                f"GEOMETRIC EXPANSION DETECTED this turn. "
+                f"Contraction ratio = {trace.contraction_ratio:.4f} (> 1.0). "
+                f"The system expanded by {expansion_pct:.1f}% rather than contracting. "
+                f"LLM renderer bypassed — geometric expansion cannot be narrated honestly. "
+                f"This is the raw geometric state."
+            )
 
         if trace.convergence_status == "FIXED_POINT":
             parts.append(
